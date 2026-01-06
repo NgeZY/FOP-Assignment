@@ -142,19 +142,21 @@ public class CalendarManager {
     }
 
     // --- Feature: Advanced Search ---
-    public List<String> search(String query) {
+    public List<Event> search(String query) {
         String q = query.toLowerCase();
-        List<String> results = new ArrayList<>();
+        List<Event> results = new ArrayList<>();
 
         for (Event e : events) {
+            // Find associated additional info (Location/Category)
             AdditionalInfo info = additionalInfos.stream()
                     .filter(a -> a.getEventId() == e.getId()).findFirst().orElse(null);
 
             String cat = (info != null) ? info.getCategory().toLowerCase() : "";
+            String loc = (info != null) ? info.getLocation().toLowerCase() : "";
 
-            // Search Title OR Category
-            if (e.getTitle().toLowerCase().contains(q) || cat.contains(q)) {
-                results.add(e.toString() + (info != null ? " [Cat: " + info.getCategory() + "]" : ""));
+            // Search in Title, Category, OR Location
+            if (e.getTitle().toLowerCase().contains(q) || cat.contains(q) || loc.contains(q)) {
+                results.add(e);
             }
         }
         return results;
