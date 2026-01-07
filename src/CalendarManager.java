@@ -170,4 +170,43 @@ public class CalendarManager {
     public AdditionalInfo getAdditionalInfo(int eventId) {
         return additionalInfos.stream().filter(a -> a.getEventId() == eventId).findFirst().orElse(null);
     }
+
+    // Add this inside CalendarManager.java
+
+    public void updateEvent(int id, String title, String desc, LocalDateTime start, LocalDateTime end,
+                            String recInt, int recTimes, LocalDate recEnd,
+                            String loc, String cat) {
+
+        // 1. Replace the Core Event object
+        for (int i = 0; i < events.size(); i++) {
+            if (events.get(i).getId() == id) {
+                events.set(i, new Event(id, title, desc, start, end));
+                break;
+            }
+        }
+
+        // 2. Update Recurrence (Remove old, add new if exists)
+        recurrences.removeIf(r -> r.getEventId() == id);
+        if (recInt != null && !recInt.equals("none")) {
+            recurrences.add(new Recurrence(id, recInt, recTimes, recEnd));
+        }
+
+        // 3. Update Additional Info (Remove old, add new)
+        additionalInfos.removeIf(a -> a.getEventId() == id);
+        if (loc != null || cat != null) {
+            additionalInfos.add(new AdditionalInfo(id, loc == null ? "" : loc, cat == null ? "" : cat));
+        }
+
+        saveAll();
+    }
+
+    // Helper to get a single event by ID (needed for the GUI)
+    public Event getEventById(int id) {
+        return events.stream().filter(e -> e.getId() == id).findFirst().orElse(null);
+    }
+
+    // Helper to get Recurrence by ID
+    public Recurrence getRecurrence(int eventId) {
+        return recurrences.stream().filter(r -> r.getEventId() == eventId).findFirst().orElse(null);
+    }
 }

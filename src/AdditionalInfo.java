@@ -14,7 +14,6 @@ public class AdditionalInfo {
     public String getCategory() { return category; }
 
     public String toCSV() {
-        // Handle commas in text by simple replacement to avoid CSV breaking
         String safeLoc = location.replace(",", " ");
         String safeCat = category.replace(",", " ");
         return eventId + "," + safeLoc + "," + safeCat;

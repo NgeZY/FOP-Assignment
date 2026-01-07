@@ -149,6 +149,7 @@ public class CalendarGUI extends JFrame {
         JTable table = new JTable(model);
         d.add(new JScrollPane(table), BorderLayout.CENTER);
 
+        JButton editBtn = new JButton("Edit Selected");
         JButton delBtn = new JButton("Delete Selected");
         delBtn.addActionListener(e -> {
             int row = table.getSelectedRow();
@@ -160,6 +161,21 @@ public class CalendarGUI extends JFrame {
             }
         });
         d.add(delBtn, BorderLayout.SOUTH);
+
+        editBtn.addActionListener(e -> {
+            int row = table.getSelectedRow();
+            if (row != -1) {
+                int id = (int) model.getValueAt(row, 0); // Get ID from hidden column
+                d.dispose(); // Close details window
+                showEditEventDialog(id); // Open Edit Window
+            }
+        });
+
+        JPanel btnPanel = new JPanel();
+        btnPanel.add(editBtn);
+        btnPanel.add(delBtn);
+        d.add(btnPanel, BorderLayout.SOUTH);
+
         d.setVisible(true);
     }
 
@@ -298,7 +314,6 @@ public class CalendarGUI extends JFrame {
         d.setLocationRelativeTo(this);
 
         // 1. Define Table Columns
-        // We include "ID" as the first column so we can identify the event programmatically
         String[] columns = {"ID", "Date", "Time", "Title", "Category", "Location"};
 
         DefaultTableModel model = new DefaultTableModel(columns, 0) {
@@ -414,9 +429,7 @@ public class CalendarGUI extends JFrame {
     }
 
     // Helper: Create a Dropdown that lists 15-min intervals,
-// BUT defaults to the exact 'targetTime' (e.g. 4:05)
-    // Helper: Create a Dropdown that lists 15-min intervals,
-// BUT defaults to the exact 'targetTime' (e.g. 4:05)
+    // BUT defaults to the exact 'targetTime' (e.g. 4:05)
     private JComboBox<String> createTimeComboBox(LocalTime targetTime) {
         JComboBox<String> combo = new JComboBox<>();
         LocalTime t = LocalTime.of(0, 0);
@@ -452,5 +465,133 @@ public class CalendarGUI extends JFrame {
 
         // Combine them, stripping seconds to be clean
         return LocalDateTime.of(localDate, localTime.truncatedTo(ChronoUnit.MINUTES));
+    }
+
+    private void showEditEventDialog(int eventId) {
+        Event event = manager.getEventById(eventId);
+        if (event == null) return;
+
+        AdditionalInfo info = manager.getAdditionalInfo(eventId);
+        Recurrence rec = manager.getRecurrence(eventId);
+
+        JDialog d = new JDialog(this, "Edit Event", true);
+        d.setSize(500, 550);
+        d.setLayout(new GridBagLayout());
+        d.setLocationRelativeTo(this);
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.insets = new Insets(5, 5, 5, 5);
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+
+        // --- Inputs ---
+        JTextField titleF = new JTextField(event.getTitle(), 15);
+        JTextField descF = new JTextField(event.getDescription(), 15);
+
+        // Date/Time Spinners
+        JSpinner startDateSpinner = createDateSpinner();
+        JSpinner startTimeSpinner = createTimeSpinner();
+        JSpinner endDateSpinner = createDateSpinner();
+        JSpinner endTimeSpinner = createTimeSpinner();
+
+        // Set existing values
+        Date startUtil = Date.from(event.getStartDateTime().atZone(ZoneId.systemDefault()).toInstant());
+        Date endUtil = Date.from(event.getEndDateTime().atZone(ZoneId.systemDefault()).toInstant());
+
+        startDateSpinner.setValue(startUtil);
+        startTimeSpinner.setValue(startUtil);
+        endDateSpinner.setValue(endUtil);
+        endTimeSpinner.setValue(endUtil);
+
+        // --- RECURRENCE UPDATE: Use "Daily" / "Weekly" ---
+        String[] intervals = {"none", "Daily", "Weekly"};
+        JComboBox<String> recurBox = new JComboBox<>(intervals);
+
+        JTextField recTimesF = new JTextField("0");
+        JTextField recEndF = new JTextField("");
+        JTextField locF = new JTextField(info != null ? info.getLocation() : "");
+        JTextField catF = new JTextField(info != null ? info.getCategory() : "");
+
+        if (rec != null) {
+            String saved = rec.getInterval();
+            if (saved.equals("1d") || saved.equalsIgnoreCase("Daily")) {
+                recurBox.setSelectedItem("Daily");
+            } else if (saved.equals("1w") || saved.equalsIgnoreCase("Weekly")) {
+                recurBox.setSelectedItem("Weekly");
+            } else {
+                recurBox.setSelectedItem("none");
+            }
+
+            recTimesF.setText(String.valueOf(rec.getTimes()));
+            recEndF.setText(rec.getEndDate() != null ? rec.getEndDate().toString() : "");
+        }
+
+        // --- Layout ---
+        gbc.gridx=0; gbc.gridy=0; d.add(new JLabel("Title:"), gbc);
+        gbc.gridx=1; d.add(titleF, gbc);
+
+        gbc.gridx=0; gbc.gridy=1; d.add(new JLabel("Description:"), gbc);
+        gbc.gridx=1; d.add(descF, gbc);
+
+        gbc.gridx=0; gbc.gridy=2; d.add(new JLabel("Start:"), gbc);
+        gbc.gridx=1;
+        JPanel sP = new JPanel(new FlowLayout(FlowLayout.LEFT,0,0));
+        sP.add(startDateSpinner); sP.add(startTimeSpinner);
+        d.add(sP, gbc);
+
+        gbc.gridx=0; gbc.gridy=3; d.add(new JLabel("End:"), gbc);
+        gbc.gridx=1;
+        JPanel eP = new JPanel(new FlowLayout(FlowLayout.LEFT,0,0));
+        eP.add(endDateSpinner); eP.add(endTimeSpinner);
+        d.add(eP, gbc);
+
+        gbc.gridx=0; gbc.gridy=4; d.add(new JLabel("Recurrence:"), gbc);
+        gbc.gridx=1; d.add(recurBox, gbc);
+
+        gbc.gridx=0; gbc.gridy=5; d.add(new JLabel("Repeat Times:"), gbc);
+        gbc.gridx=1; d.add(recTimesF, gbc);
+
+        gbc.gridx=0; gbc.gridy=6; d.add(new JLabel("Stop Date (YYYY-MM-DD):"), gbc);
+        gbc.gridx=1; d.add(recEndF, gbc);
+
+        gbc.gridx=0; gbc.gridy=7; d.add(new JLabel("Location:"), gbc);
+        gbc.gridx=1; d.add(locF, gbc);
+
+        gbc.gridx=0; gbc.gridy=8; d.add(new JLabel("Category:"), gbc);
+        gbc.gridx=1; d.add(catF, gbc);
+
+        JButton saveBtn = new JButton("Update Event");
+        gbc.gridx=0; gbc.gridy=9; gbc.gridwidth=2;
+        d.add(saveBtn, gbc);
+
+        // --- Save Action ---
+        saveBtn.addActionListener(ev -> {
+            try {
+                LocalDateTime start = getLocalDateTime(startDateSpinner, startTimeSpinner);
+                LocalDateTime end = getLocalDateTime(endDateSpinner, endTimeSpinner);
+
+                LocalDate rEnd = null;
+                if (!recEndF.getText().trim().isEmpty()) {
+                    rEnd = LocalDate.parse(recEndF.getText().trim());
+                }
+
+                // Directly use the selected item ("Daily" or "Weekly")
+                String selectedInterval = (String) recurBox.getSelectedItem();
+
+                manager.updateEvent(
+                        eventId,
+                        titleF.getText(), descF.getText(), start, end,
+                        selectedInterval,
+                        Integer.parseInt(recTimesF.getText()), rEnd,
+                        locF.getText(), catF.getText()
+                );
+
+                d.dispose();
+                refreshCalendar();
+                JOptionPane.showMessageDialog(this, "Event Updated!");
+            } catch (Exception ex) {
+                JOptionPane.showMessageDialog(d, "Error: " + ex.getMessage());
+            }
+        });
+
+        d.setVisible(true);
     }
 }
