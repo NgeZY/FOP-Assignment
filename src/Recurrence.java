@@ -2,7 +2,7 @@ import java.time.LocalDate;
 
 public class Recurrence {
     private int eventId;
-    private String interval; // "1d", "1w"
+    private String interval; // "Daily", "Weekly"
     private int times;       // 0 if using endDate
     private LocalDate endDate; // null if using times
 

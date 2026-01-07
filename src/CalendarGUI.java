@@ -190,7 +190,7 @@ public class CalendarGUI extends JFrame {
         endTimeSpinner.setValue(cal.getTime());
 
         // Recurrence & Extra Fields
-        JComboBox<String> recurBox = new JComboBox<>(new String[]{"none", "1d", "1w"});
+        JComboBox<String> recurBox = new JComboBox<>(new String[]{"none", "Daily", "Weekly"});
         JTextField recTimesF = new JTextField("0");
         JTextField recEndF = new JTextField("YYYY-MM-DD");
         JTextField locF = new JTextField();

@@ -86,6 +86,8 @@ public class CalendarManager {
         return dailyEvents;
     }
 
+    // In CalendarManager.java
+
     private boolean isEventOnDate(Event e, LocalDate target) {
         LocalDate start = e.getStartDateTime().toLocalDate();
         if (start.equals(target)) return true; // Exact match
@@ -96,17 +98,20 @@ public class CalendarManager {
         long diff = ChronoUnit.DAYS.between(start, target);
         boolean intervalMatch = false;
 
-        if (r.getInterval().equals("1d")) intervalMatch = true;
-        else if (r.getInterval().equals("1w")) intervalMatch = (diff % 7 == 0);
+        if (r.getInterval().equals("Daily")) intervalMatch = true;
+        else if (r.getInterval().equals("Weekly")) intervalMatch = (diff % 7 == 0);
 
         if (intervalMatch) {
             // Check stop limits
             if (r.getEndDate() != null) return !target.isAfter(r.getEndDate());
+
+            // BUG FIX HERE:
             if (r.getTimes() > 0) {
-                long count = r.getInterval().equals("1w") ? diff / 7 : diff;
-                return count < r.getTimes();
+                long count = r.getInterval().equals("Weekly") ? diff / 7 : diff;
+                // Change '<' to '<=' so that 'times=1' allows exactly 1 repetition.
+                return count <= r.getTimes();
             }
-            return true; // No limit
+            return true; // No limit (Infinite if times is 0 and date is null)
         }
         return false;
     }
