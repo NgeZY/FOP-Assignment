@@ -428,31 +428,6 @@ public class CalendarGUI extends JFrame {
         return spinner;
     }
 
-    // Helper: Create a Dropdown that lists 15-min intervals,
-    // BUT defaults to the exact 'targetTime' (e.g. 4:05)
-    private JComboBox<String> createTimeComboBox(LocalTime targetTime) {
-        JComboBox<String> combo = new JComboBox<>();
-        LocalTime t = LocalTime.of(0, 0);
-
-        // 1. Generate the standard dropdown list (00:00, 00:15, 00:30...)
-        // This gives the user quick options if they want them.
-        while (true) {
-            combo.addItem(t.format(DateTimeFormatter.ofPattern("HH:mm")));
-            t = t.plusMinutes(15);
-            if (t.equals(LocalTime.of(0, 0))) break;
-        }
-
-        // 2. Allow the box to accept ANY text (like "16:07")
-        combo.setEditable(true);
-
-        // 3. Set the displayed value to the EXACT target time
-        // Since it's editable, this works even if "16:05" isn't in the list above.
-        String exactTime = targetTime.format(DateTimeFormatter.ofPattern("HH:mm"));
-        combo.setSelectedItem(exactTime);
-
-        return combo;
-    }
-
     // Helper: Merge Date Spinner + Time Spinner -> LocalDateTime
     private LocalDateTime getLocalDateTime(JSpinner dateSpinner, JSpinner timeSpinner) {
         // Get values as legacy java.util.Date objects
